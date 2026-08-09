@@ -4,13 +4,16 @@ import com.kyovo.domain.model.Article
 import com.kyovo.domain.model.Theme
 import com.kyovo.domain.port.output.ArticleFeedPort
 import com.rometools.rome.feed.synd.SyndEntry
+import com.rometools.rome.feed.synd.SyndFeed
 import com.rometools.rome.io.SyndFeedInput
+import com.rometools.rome.io.WireFeedInput
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import org.jdom2.input.SAXBuilder
 import java.io.StringReader
 
 class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
@@ -25,11 +28,27 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
     // A failure on one feed must not block the entire digest.
     private suspend fun fetchFeed(url: String, theme: Theme): List<Article> = try {
         val xml = httpClient.get(url).bodyAsText()
-        val feed = SyndFeedInput().build(StringReader(xml))
+        val feed = parseFeed(xml)
         feed.entries.mapNotNull { it.toArticle(theme, feed.title ?: url) }
     } catch (e: Exception) {
         System.err.println("[RssFeedAdapter] Skipped feed $url: ${e.message}")
         emptyList()
+    }
+
+    private fun parseFeed(xml: String): SyndFeed = try {
+        // Allow DOCTYPE declarations (Substack, Finextra, Google Cloud use them).
+        // External entity resolution stays disabled to prevent XXE attacks.
+        val saxBuilder = SAXBuilder()
+        saxBuilder.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+        saxBuilder.setFeature("http://xml.org/sax/features/external-general-entities", false)
+        saxBuilder.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+        val document = saxBuilder.build(xml.byteInputStream(Charsets.UTF_8))
+        WireFeedInput().build(document) as SyndFeed
+    } catch (e: Exception) {
+        // Fallback: Rome's healer fixes unclosed HTML tags and similar malformations (e.g. InfoQ).
+        val input = SyndFeedInput()
+        input.setXmlHealerOn(true)
+        input.build(StringReader(xml))
     }
 
     private fun SyndEntry.toArticle(theme: Theme, sourceName: String): Article? {
