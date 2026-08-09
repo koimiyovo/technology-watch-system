@@ -7,6 +7,13 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/application" />
+            <option value="$PROJECT_DIR$/bootstrap" />
+            <option value="$PROJECT_DIR$/domain" />
+            <option value="$PROJECT_DIR$/infrastructure" />
+            <option value="$PROJECT_DIR$/infrastructure/email" />
+            <option value="$PROJECT_DIR$/infrastructure/llm" />
+            <option value="$PROJECT_DIR$/infrastructure/rss" />
           </set>
         </option>
         <option name="myGradleHome" value="" />

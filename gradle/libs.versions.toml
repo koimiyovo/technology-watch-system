@@ -1,0 +1,30 @@
+[versions]
+kotlin             = "2.3.20"
+coroutines         = "1.9.0"
+serialization      = "1.7.3"
+ktor               = "3.0.3"
+rome               = "2.1.0"
+angus-mail         = "2.0.3"
+junit5             = "5.11.3"
+mockk              = "1.13.13"
+shadow             = "8.3.0"
+
+[libraries]
+kotlinx-coroutines-core          = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core",           version.ref = "coroutines" }
+kotlinx-coroutines-test          = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test",           version.ref = "coroutines" }
+kotlinx-serialization-json       = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json",        version.ref = "serialization" }
+ktor-client-core                 = { module = "io.ktor:ktor-client-core",                                version.ref = "ktor" }
+ktor-client-cio                  = { module = "io.ktor:ktor-client-cio",                                 version.ref = "ktor" }
+ktor-client-content-negotiation  = { module = "io.ktor:ktor-client-content-negotiation",                 version.ref = "ktor" }
+ktor-serialization-kotlinx-json  = { module = "io.ktor:ktor-serialization-kotlinx-json",                 version.ref = "ktor" }
+rome                             = { module = "com.rometools:rome",                                       version.ref = "rome" }
+angus-mail                       = { module = "org.eclipse.angus:angus-mail",                            version.ref = "angus-mail" }
+junit-bom                        = { module = "org.junit:junit-bom",                                     version.ref = "junit5" }
+junit-jupiter                    = { module = "org.junit.jupiter:junit-jupiter",                          version.ref = "junit5" }
+kotlin-test-junit5               = { module = "org.jetbrains.kotlin:kotlin-test-junit5",                 version.ref = "kotlin" }
+mockk                            = { module = "io.mockk:mockk",                                          version.ref = "mockk" }
+
+[plugins]
+kotlin-jvm            = { id = "org.jetbrains.kotlin.jvm",                   version.ref = "kotlin" }
+kotlin-serialization  = { id = "org.jetbrains.kotlin.plugin.serialization",  version.ref = "kotlin" }
+shadow                = { id = "com.gradleup.shadow",                         version.ref = "shadow" }
