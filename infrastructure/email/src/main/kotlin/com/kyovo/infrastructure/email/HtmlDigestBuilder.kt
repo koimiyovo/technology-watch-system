@@ -56,8 +56,8 @@ object HtmlDigestBuilder {
         """.trimIndent()
     }
 
-    // La logique d'affichage (nom localisé du thème) appartient à la couche présentation,
-    // pas au domaine — c'est pourquoi cette fonction est ici et non dans l'enum.
+    // Display logic (localised theme name) belongs to the presentation layer,
+    // not to the domain — that is why this function lives here and not in the enum.
     private fun Theme.displayName(): String = when (this) {
         Theme.KOTLIN        -> "Kotlin"
         Theme.AI            -> "Intelligence Artificielle"

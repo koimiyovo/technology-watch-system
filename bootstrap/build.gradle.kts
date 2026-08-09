@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.shadow)
-    // Le plugin `application` génère des tâches de distribution (startShadowScripts, etc.)
-    // qui accèdent à la propriété `mainClassName` supprimée en Gradle 9. On le retire
-    // et on inscrit le Main-Class directement dans le manifest du shadow jar.
+    // The `application` plugin generates distribution tasks (startShadowScripts, etc.)
+    // that access the `mainClassName` property removed in Gradle 9. Omitting the plugin
+    // and writing Main-Class directly into the shadow jar manifest is the workaround.
 }
 
 kotlin {
@@ -11,15 +11,15 @@ kotlin {
 }
 
 dependencies {
-    // Bootstrap est le seul endroit qui connaît toute l'architecture.
-    // Il instancie ArticleCurator (domain) directement → dépendance explicite requise.
-    // `implementation` dans :application ne l'expose pas transitivement aux consommateurs.
+    // Bootstrap is the only module that knows the full architecture.
+    // It instantiates ArticleCurator (domain) directly — explicit dependency required.
+    // `implementation` in :application is not transitive to consumers.
     implementation(project(":domain"))
     implementation(project(":application"))
     implementation(project(":infrastructure:rss"))
     implementation(project(":infrastructure:llm"))
     implementation(project(":infrastructure:email"))
-    // Bootstrap crée et configure l'HttpClient — il doit déclarer Ktor explicitement.
+    // Bootstrap creates and configures the HttpClient — Ktor must be declared explicitly.
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
 }

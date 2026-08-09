@@ -15,7 +15,7 @@ import java.util.Properties
 
 class SmtpNotifierAdapter(private val config: SmtpConfig) : NotifierPort {
 
-    // Transport.send() est bloquant — on le confine sur IO.
+    // Transport.send() is blocking — dispatch to the IO dispatcher.
     override suspend fun sendDigest(articles: List<SummarizedArticle>): Unit =
         withContext(Dispatchers.IO) {
             val session = buildSession()

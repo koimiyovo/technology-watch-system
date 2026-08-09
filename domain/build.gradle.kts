@@ -7,8 +7,8 @@ kotlin {
 }
 
 dependencies {
-    // Les ports du domaine utilisent `suspend` → coroutines sur le classpath.
-    // Aucune autre dépendance infra : c'est la garantie de l'isolation hexagonale.
+    // Domain ports use `suspend` — coroutines must be on the classpath.
+    // No other infra dependency: this enforces hexagonal isolation at compile time.
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(platform(libs.junit.bom))

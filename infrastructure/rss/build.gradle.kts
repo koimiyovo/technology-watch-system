@@ -10,7 +10,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.rome)
-    // Ktor CIO pour fetcher les flux RSS via HTTP
+    // Ktor CIO engine for fetching RSS feeds over HTTP
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
 

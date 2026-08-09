@@ -51,7 +51,7 @@ fun main(): Unit = runBlocking {
 private fun buildHttpClient() = HttpClient(CIO) {
     install(HttpTimeout) {
         connectTimeoutMillis = 10_000
-        requestTimeoutMillis = 120_000  // Claude API peut prendre jusqu'à ~60s
+        requestTimeoutMillis = 120_000  // Claude API calls can take up to ~60s
         socketTimeoutMillis  = 60_000
     }
 }

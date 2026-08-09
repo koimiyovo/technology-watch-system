@@ -22,7 +22,7 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
             .flatten()
     }
 
-    // Un échec sur un flux ne doit pas bloquer tout le digest.
+    // A failure on one feed must not block the entire digest.
     private suspend fun fetchFeed(url: String, theme: Theme): List<Article> = try {
         val xml = httpClient.get(url).bodyAsText()
         val feed = SyndFeedInput().build(StringReader(xml))

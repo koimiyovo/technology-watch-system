@@ -30,9 +30,9 @@ class DailyDigestService(
         notifierPort.sendDigest(summarized)
     }
 
-    // Chaque thème est fetché en parallèle pour minimiser la latence totale.
-    // coroutineScope garantit que toutes les coroutines enfants sont terminées
-    // (ou annulées en cas d'exception) avant de retourner.
+    // Each theme is fetched concurrently to minimise total latency.
+    // coroutineScope ensures all child coroutines complete (or are cancelled on failure)
+    // before returning.
     private suspend fun fetchAllThemesInParallel(): List<Article> = coroutineScope {
         Theme.entries
             .map { theme -> async { feedPort.fetchArticles(theme) } }
