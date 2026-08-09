@@ -15,12 +15,13 @@ class DailyDigestService(
     private val feedPort: ArticleFeedPort,
     private val curator: ArticleCurator,
     private val summarizerPort: SummarizerPort,
-    private val notifierPort: NotifierPort
+    private val notifierPort: NotifierPort,
+    private val windowHours: Long
 ) : GenerateDailyDigestUseCase {
 
     override suspend fun execute() {
         val rawArticles = fetchAllThemesInParallel()
-        val curated = curator.curate(rawArticles)
+        val curated = curator.curate(rawArticles, windowHours)
         if (curated.isEmpty()) return
 
         val summarized = summarizerPort.summarize(curated)

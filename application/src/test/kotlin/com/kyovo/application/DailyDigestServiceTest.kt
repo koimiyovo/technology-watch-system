@@ -31,6 +31,7 @@ class DailyDigestServiceTest {
     private val service = DailyDigestService(
         feedPort       = feedPort,
         curator        = ArticleCurator(clock),
+        windowHours    = 24L,
         summarizerPort = summarizerPort,
         notifierPort   = notifierPort
     )

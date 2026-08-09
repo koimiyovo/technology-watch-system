@@ -19,6 +19,7 @@ fun main(): Unit = runBlocking {
     val service = DailyDigestService(
         feedPort       = RssFeedAdapter(httpClient),
         curator        = ArticleCurator(Clock.systemUTC()),
+        windowHours    = 24L,
         summarizerPort = ClaudeAdapter(
             httpClient = httpClient,
             apiKey     = requireEnv("ANTHROPIC_API_KEY")

@@ -35,24 +35,24 @@ class ArticleCuratorTest {
     @Test
     fun `keeps article published exactly at the window boundary`() {
         val atBoundary = article(link = "https://a.com", publishedAt = now.minus(Duration.ofHours(24)))
-        assertEquals(emptyList(), curator.curate(listOf(atBoundary)))
+        assertEquals(emptyList(), curator.curate(listOf(atBoundary), windowHours = 24))
     }
 
     @Test
     fun `keeps article published one second inside the window`() {
         val justIn = article(link = "https://b.com", publishedAt = now.minus(Duration.ofHours(24)).plusSeconds(1))
-        assertEquals(listOf(justIn), curator.curate(listOf(justIn)))
+        assertEquals(listOf(justIn), curator.curate(listOf(justIn), windowHours = 24))
     }
 
     @Test
     fun `excludes articles older than 24h`() {
         val old = article(link = "https://c.com", publishedAt = now.minus(Duration.ofHours(25)))
-        assertEquals(emptyList(), curator.curate(listOf(old)))
+        assertEquals(emptyList(), curator.curate(listOf(old), windowHours = 24))
     }
 
     @Test
     fun `handles empty input`() {
-        assertEquals(emptyList(), curator.curate(emptyList()))
+        assertEquals(emptyList(), curator.curate(emptyList(), windowHours = 24))
     }
 
     // ── deduplication ─────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ class ArticleCuratorTest {
     fun `keeps only the first occurrence of a duplicate link`() {
         val original  = article(link = "https://d.com", title = "Original")
         val duplicate = article(link = "https://d.com", title = "Duplicate")
-        val result = curator.curate(listOf(original, duplicate))
+        val result = curator.curate(listOf(original, duplicate), windowHours = 24)
         assertEquals(1, result.size)
         assertEquals("Original", result.single().title)
     }
@@ -70,7 +70,7 @@ class ArticleCuratorTest {
     fun `keeps articles with distinct links`() {
         val first  = article(link = "https://e.com")
         val second = article(link = "https://f.com")
-        assertEquals(2, curator.curate(listOf(first, second)).size)
+        assertEquals(2, curator.curate(listOf(first, second), windowHours = 24).size)
     }
 
     // ── ordering ──────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ class ArticleCuratorTest {
     fun `returns articles sorted from most recent to oldest`() {
         val older = article(link = "https://g.com", publishedAt = now.minus(Duration.ofHours(10)))
         val newer = article(link = "https://h.com", publishedAt = now.minus(Duration.ofHours(2)))
-        assertEquals(listOf(newer, older), curator.curate(listOf(older, newer)))
+        assertEquals(listOf(newer, older), curator.curate(listOf(older, newer), windowHours = 24))
     }
 
     // ── custom window ─────────────────────────────────────────────────────────

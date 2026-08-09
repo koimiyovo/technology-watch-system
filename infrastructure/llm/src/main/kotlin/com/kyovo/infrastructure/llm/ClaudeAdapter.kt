@@ -14,6 +14,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class ClaudeAdapter(
     private val httpClient: HttpClient,
@@ -37,14 +40,23 @@ class ClaudeAdapter(
                 messages  = listOf(ClaudeMessage(role = "user", content = userContent))
             )
         )
-        val response = httpClient.post(API_URL) {
+        val responseText = httpClient.post(API_URL) {
             header("x-api-key", apiKey)
             header("anthropic-version", ANTHROPIC_VERSION)
             contentType(ContentType.Application.Json)
             setBody(requestBody)
-        }
-        return json.decodeFromString<ClaudeResponse>(response.bodyAsText())
-            .content.first { it.type == "text" }.text
+        }.bodyAsText()
+
+        // Extract the text from the first text-type content block.
+        // Using JsonElement avoids a default parameter on a wire type: the `text`
+        // field is absent on non-text blocks (e.g. tool_use), which kotlinx.serialization
+        // cannot model without a default value.
+        return json.parseToJsonElement(responseText)
+            .jsonObject["content"]!!
+            .jsonArray
+            .first { it.jsonObject["type"]!!.jsonPrimitive.content == "text" }
+            .jsonObject["text"]!!
+            .jsonPrimitive.content
     }
 
     private fun buildUserContent(articles: List<Article>): String {
@@ -141,12 +153,6 @@ private data class ClaudeRequest(
 
 @Serializable
 private data class ClaudeMessage(val role: String, val content: String)
-
-@Serializable
-private data class ClaudeResponse(val content: List<ContentBlock>)
-
-@Serializable
-private data class ContentBlock(val type: String, val text: String = "")
 
 // ── LLM response shape ────────────────────────────────────────────────────────
 
