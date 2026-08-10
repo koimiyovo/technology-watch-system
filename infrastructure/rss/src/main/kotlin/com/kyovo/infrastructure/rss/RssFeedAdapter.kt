@@ -5,6 +5,7 @@ import com.kyovo.domain.model.Theme
 import com.kyovo.domain.port.output.ArticleFeedPort
 import com.rometools.rome.feed.synd.SyndEntry
 import com.rometools.rome.feed.synd.SyndFeed
+import com.rometools.rome.feed.synd.SyndFeedImpl
 import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.WireFeedInput
 import io.ktor.client.HttpClient
@@ -43,7 +44,8 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
         saxBuilder.setFeature("http://xml.org/sax/features/external-general-entities", false)
         saxBuilder.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
         val document = saxBuilder.build(xml.byteInputStream(Charsets.UTF_8))
-        WireFeedInput().build(document) as SyndFeed
+        // WireFeedInput returns the format-specific WireFeed (e.g. Channel), not a SyndFeed directly.
+        SyndFeedImpl(WireFeedInput().build(document))
     } catch (e: Exception) {
         // Fallback: Rome's healer fixes unclosed HTML tags and similar malformations (e.g. InfoQ).
         val input = SyndFeedInput()
