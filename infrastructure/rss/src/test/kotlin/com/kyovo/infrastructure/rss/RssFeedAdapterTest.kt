@@ -90,10 +90,8 @@ class RssFeedAdapterTest {
     }
 
     @Test
-    fun `skips a feed with an unclosed HTML tag instead of throwing`() = runTest {
+    fun `parses a feed with an unclosed HTML void tag by self-closing it before parsing`() = runTest {
         // Mirrors InfoQ feeds: an unclosed <br> tag breaks strict XML well-formedness.
-        // Known limitation: Rome's XML healer (setXmlHealerOn) does not repair structural
-        // tag mismatches like this one, so both parse attempts fail and the feed is skipped.
         val xml = """
             <?xml version="1.0" encoding="UTF-8"?>
             <rss version="2.0">
@@ -113,7 +111,35 @@ class RssFeedAdapterTest {
         val adapter = adapterWith(mapOf(infoqUrl to xml))
         val articles = adapter.fetchArticles(Theme.KOTLIN)
 
-        assertEquals(0, articles.size)
+        assertEquals(1, articles.size)
+        assertEquals("Kotlin Coroutines Guide", articles.single().title)
+    }
+
+    @Test
+    fun `does not alter an already self-closed void tag or the RSS link element`() = runTest {
+        val xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <rss version="2.0">
+              <channel>
+                <title>InfoQ</title>
+                <link>https://www.infoq.com/kotlin/</link>
+                <item>
+                  <title>Kotlin Coroutines Guide</title>
+                  <link>https://www.infoq.com/articles/kotlin-coroutines</link>
+                  <description>Illustration<img src="https://example.com/x.png"/> and a break<br/>here.</description>
+                  <pubDate>Mon, 10 Aug 2026 08:00:00 GMT</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val adapter = adapterWith(mapOf(infoqUrl to xml))
+        val articles = adapter.fetchArticles(Theme.KOTLIN)
+
+        assertEquals(1, articles.size)
+        val article = articles.single()
+        assertEquals("Kotlin Coroutines Guide", article.title)
+        assertEquals("https://www.infoq.com/articles/kotlin-coroutines", article.link)
     }
 
     @Test

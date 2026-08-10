@@ -36,22 +36,38 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
         emptyList()
     }
 
-    private fun parseFeed(xml: String): SyndFeed = try {
-        // Allow DOCTYPE declarations (Substack, Finextra, Google Cloud use them).
-        // External entity resolution stays disabled to prevent XXE attacks.
-        val saxBuilder = SAXBuilder()
-        saxBuilder.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
-        saxBuilder.setFeature("http://xml.org/sax/features/external-general-entities", false)
-        saxBuilder.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
-        val document = saxBuilder.build(xml.byteInputStream(Charsets.UTF_8))
-        // WireFeedInput returns the format-specific WireFeed (e.g. Channel), not a SyndFeed directly.
-        SyndFeedImpl(WireFeedInput().build(document))
-    } catch (e: Exception) {
-        // Fallback: Rome's healer fixes unclosed HTML tags and similar malformations (e.g. InfoQ).
-        val input = SyndFeedInput()
-        input.setXmlHealerOn(true)
-        input.build(StringReader(xml))
+    private fun parseFeed(xml: String): SyndFeed {
+        // InfoQ and similar feeds embed raw, unclosed HTML void elements (e.g. <br>) in text
+        // fields, which breaks XML well-formedness before either parser below even runs.
+        val sanitizedXml = closeUnclosedVoidHtmlTags(xml)
+        return try {
+            // Allow DOCTYPE declarations (Substack, Finextra, Google Cloud use them).
+            // External entity resolution stays disabled to prevent XXE attacks.
+            val saxBuilder = SAXBuilder()
+            saxBuilder.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+            saxBuilder.setFeature("http://xml.org/sax/features/external-general-entities", false)
+            saxBuilder.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+            val document = saxBuilder.build(sanitizedXml.byteInputStream(Charsets.UTF_8))
+            // WireFeedInput returns the format-specific WireFeed (e.g. Channel), not a SyndFeed directly.
+            SyndFeedImpl(WireFeedInput().build(document))
+        } catch (e: Exception) {
+            // Fallback: Rome's healer fixes invalid characters and similar low-level malformations.
+            val input = SyndFeedInput()
+            input.setXmlHealerOn(true)
+            input.build(StringReader(sanitizedXml))
+        }
     }
+
+    // Limited to void elements that never appear as legitimate RSS/Atom element names
+    // (unlike e.g. "link" or "area"), so this cannot corrupt well-formed feed content.
+    private val voidHtmlTags = listOf("br", "hr", "img", "wbr")
+
+    private fun closeUnclosedVoidHtmlTags(xml: String): String =
+        voidHtmlTags.fold(xml) { acc, tag ->
+            acc.replace(Regex("<$tag(\\s[^<>]*)?(?<!/)>", RegexOption.IGNORE_CASE)) { match ->
+                "<$tag${match.groupValues[1]}/>"
+            }
+        }
 
     private fun SyndEntry.toArticle(theme: Theme, sourceName: String): Article? {
         val articleLink = link?.takeIf { it.isNotBlank() } ?: return null
