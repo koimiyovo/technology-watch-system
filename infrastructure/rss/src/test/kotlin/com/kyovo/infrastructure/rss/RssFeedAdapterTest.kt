@@ -197,11 +197,12 @@ class RssFeedAdapterTest {
     }
 
     @Test
-    fun `logs both parser errors when the feed URL returns an HTML anti-bot page instead of RSS`() = runTest {
+    fun `logs the primary parser's error, not the fallback's misleading DOCTYPE message`() = runTest {
         // Reproduces the case reported for importai.substack.com/feed: the response body was
-        // an HTML challenge/error page, not the real feed (which has no DOCTYPE at all). Before
-        // this test, the logged error only named the fallback parser's blanket DOCTYPE
-        // restriction, hiding the real, more informative cause from the primary parser.
+        // an HTML challenge/error page, not the real feed (which has no DOCTYPE at all). The
+        // fallback parser rejects any DOCTYPE outright, so on its own its error would blame
+        // DOCTYPE even though that isn't the real problem - the HTML content itself is. The
+        // primary parser's error names the actual problem instead.
         val antiBotHtml = """
             <!DOCTYPE html>
             <html><head><title>Just a moment...</title></head>
@@ -221,9 +222,10 @@ class RssFeedAdapterTest {
 
         assertTrue(articles.isEmpty())
         val stderr = capturedErr.toString(Charsets.UTF_8)
-        assertTrue(stderr.contains("Skipped feed $importAiUrl"))
-        assertTrue(stderr.contains("primary parser:"))
-        assertTrue(stderr.contains("fallback parser:"))
-        assertTrue(stderr.contains("DOCTYPE is disallowed"))
+        // Rome recognizes the HTML as well-formed XML but not as any known feed format, so the
+        // primary parser reports "Invalid document" - a far more useful signal than the
+        // fallback's blanket DOCTYPE rejection.
+        assertTrue(stderr.contains("Skipped feed $importAiUrl : Invalid document"))
+        assertTrue(!stderr.contains("DOCTYPE is disallowed"))
     }
 }

@@ -59,12 +59,11 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
             input.setXmlHealerOn(true)
             input.build(StringReader(sanitizedXml))
         } catch (fallbackFailure: Exception) {
-            // The fallback parser rejects any DOCTYPE outright, so when both attempts fail its
-            // message alone is misleading: it always blames DOCTYPE, even when the real cause
-            // is that the response body isn't a feed at all (e.g. an anti-bot HTML challenge
-            // page). Surface the primary parser's error too, since it usually names the actual
-            // problem.
-            throw Exception("primary parser: ${primaryFailure.message} | fallback parser: ${fallbackFailure.message}")
+            // The fallback parser rejects any DOCTYPE outright, so its message is a red herring
+            // whenever a DOCTYPE happens to be present (e.g. an anti-bot HTML page returned
+            // instead of the real feed) - it names DOCTYPE even when that isn't the real
+            // problem. The primary parser's error is the one that names what actually failed.
+            throw primaryFailure
         }
     }
 
@@ -107,9 +106,7 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
                 "https://feed.infoq.com/kotlin/"
             ),
             Theme.AI to listOf(
-                // deeplearning.ai dropped "The Batch"'s RSS feed entirely; no replacement exists.
                 "https://huggingface.co/blog/feed.xml",
-                "https://importai.substack.com/feed",
                 "https://www.normaltech.ai/feed"
             ),
             Theme.CLOUD to listOf(
