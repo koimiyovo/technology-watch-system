@@ -32,7 +32,7 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
         val feed = parseFeed(xml)
         feed.entries.mapNotNull { it.toArticle(theme, feed.title ?: url) }
     } catch (e: Exception) {
-        System.err.println("[RssFeedAdapter] Skipped feed $url: ${e.message}")
+        System.err.println("[RssFeedAdapter] Skipped feed $url : ${e.message}")
         emptyList()
     }
 
@@ -40,7 +40,7 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
         // InfoQ and similar feeds embed raw, unclosed HTML void elements (e.g. <br>) in text
         // fields, which breaks XML well-formedness before either parser below even runs.
         val sanitizedXml = closeUnclosedVoidHtmlTags(xml)
-        return try {
+        val primaryFailure = try {
             // Allow DOCTYPE declarations (Substack, Finextra, Google Cloud use them).
             // External entity resolution stays disabled to prevent XXE attacks.
             val saxBuilder = SAXBuilder()
@@ -49,12 +49,22 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
             saxBuilder.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
             val document = saxBuilder.build(sanitizedXml.byteInputStream(Charsets.UTF_8))
             // WireFeedInput returns the format-specific WireFeed (e.g. Channel), not a SyndFeed directly.
-            SyndFeedImpl(WireFeedInput().build(document))
+            return SyndFeedImpl(WireFeedInput().build(document))
         } catch (e: Exception) {
+            e
+        }
+        return try {
             // Fallback: Rome's healer fixes invalid characters and similar low-level malformations.
             val input = SyndFeedInput()
             input.setXmlHealerOn(true)
             input.build(StringReader(sanitizedXml))
+        } catch (fallbackFailure: Exception) {
+            // The fallback parser rejects any DOCTYPE outright, so when both attempts fail its
+            // message alone is misleading: it always blames DOCTYPE, even when the real cause
+            // is that the response body isn't a feed at all (e.g. an anti-bot HTML challenge
+            // page). Surface the primary parser's error too, since it usually names the actual
+            // problem.
+            throw Exception("primary parser: ${primaryFailure.message} | fallback parser: ${fallbackFailure.message}")
         }
     }
 
@@ -100,7 +110,7 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
                 // deeplearning.ai dropped "The Batch"'s RSS feed entirely; no replacement exists.
                 "https://huggingface.co/blog/feed.xml",
                 "https://importai.substack.com/feed",
-                "https://aisnakeoil.substack.com/feed"
+                "https://www.normaltech.ai/feed"
             ),
             Theme.CLOUD to listOf(
                 "https://aws.amazon.com/blogs/aws/feed/",

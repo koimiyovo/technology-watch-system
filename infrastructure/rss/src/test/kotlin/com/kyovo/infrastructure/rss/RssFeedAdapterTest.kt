@@ -19,6 +19,9 @@ class RssFeedAdapterTest {
     private val androidUrl   = "https://android-developers.googleblog.com/feeds/posts/default"
     private val infoqUrl     = "https://feed.infoq.com/kotlin/"
 
+    // AI feed URL, fixed in RssFeedAdapter.feedUrlsByTheme.
+    private val importAiUrl = "https://importai.substack.com/feed"
+
     // Any URL not stubbed with real feed content behaves like a broken feed:
     // both parsing attempts fail, so RssFeedAdapter must skip it silently.
     private fun adapterWith(responsesByUrl: Map<String, String>): RssFeedAdapter {
@@ -167,5 +170,60 @@ class RssFeedAdapterTest {
 
         assertEquals(1, articles.size)
         assertEquals("Kotlin 2.3 Released", articles.single().title)
+    }
+
+    @Test
+    fun `parses the real importai substack feed sample`() = runTest {
+        // Real payload fetched from https://importai.substack.com/feed on 2026-08-10:
+        // Substack-generated RSS 2.0, no DOCTYPE, itunes/googleplay namespaces, every text
+        // field wrapped in a multi-line CDATA block, content:encoded bodies full of escaped
+        // HTML entities (&#8217; etc.) and literal href="..." links.
+        val xml = javaClass.getResourceAsStream("/importai-feed-sample.xml")!!
+            .bufferedReader(Charsets.UTF_8).readText()
+
+        val adapter = adapterWith(mapOf(importAiUrl to xml))
+        val articles = adapter.fetchArticles(Theme.AI)
+
+        assertEquals(2, articles.size)
+        val latest = articles.single { it.link.endsWith("posttrainbench") }
+        assertEquals(
+            "Import AI 468: 23 RSI ideas; PostTrainBench+; and how trust and transparency interplay with AI racing",
+            latest.title
+        )
+        // Substack pretty-prints the channel <title> CDATA across lines, and Rome does not
+        // trim it, so the raw source name carries leading/trailing whitespace and newlines.
+        assertEquals("Import AI", latest.source.trim())
+        assertTrue(latest.summary.isNotBlank())
+    }
+
+    @Test
+    fun `logs both parser errors when the feed URL returns an HTML anti-bot page instead of RSS`() = runTest {
+        // Reproduces the case reported for importai.substack.com/feed: the response body was
+        // an HTML challenge/error page, not the real feed (which has no DOCTYPE at all). Before
+        // this test, the logged error only named the fallback parser's blanket DOCTYPE
+        // restriction, hiding the real, more informative cause from the primary parser.
+        val antiBotHtml = """
+            <!DOCTYPE html>
+            <html><head><title>Just a moment...</title></head>
+            <body>Enable JavaScript and cookies to continue</body></html>
+        """.trimIndent()
+
+        val originalErr = System.err
+        val capturedErr = java.io.ByteArrayOutputStream()
+        System.setErr(java.io.PrintStream(capturedErr))
+        val articles: List<com.kyovo.domain.model.Article>
+        try {
+            val adapter = adapterWith(mapOf(importAiUrl to antiBotHtml))
+            articles = adapter.fetchArticles(Theme.AI)
+        } finally {
+            System.setErr(originalErr)
+        }
+
+        assertTrue(articles.isEmpty())
+        val stderr = capturedErr.toString(Charsets.UTF_8)
+        assertTrue(stderr.contains("Skipped feed $importAiUrl"))
+        assertTrue(stderr.contains("primary parser:"))
+        assertTrue(stderr.contains("fallback parser:"))
+        assertTrue(stderr.contains("DOCTYPE is disallowed"))
     }
 }
