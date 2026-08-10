@@ -94,17 +94,17 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
             Theme.KOTLIN to listOf(
                 "https://blog.jetbrains.com/kotlin/feed/",
                 "https://android-developers.googleblog.com/feeds/posts/default",
-                "https://www.infoq.com/kotlin/rss/"
+                "https://feed.infoq.com/kotlin/"
             ),
             Theme.AI to listOf(
-                "https://www.deeplearning.ai/the-batch/feed/",
+                // deeplearning.ai dropped "The Batch"'s RSS feed entirely; no replacement exists.
                 "https://huggingface.co/blog/feed.xml",
                 "https://importai.substack.com/feed",
                 "https://aisnakeoil.substack.com/feed"
             ),
             Theme.CLOUD to listOf(
                 "https://aws.amazon.com/blogs/aws/feed/",
-                "https://cloud.google.com/blog/rss/",
+                "https://cloudblog.withgoogle.com/rss/",
                 "https://azure.microsoft.com/en-us/blog/feed/",
                 "https://thenewstack.io/feed/"
             ),
@@ -115,7 +115,6 @@ class RssFeedAdapter(private val httpClient: HttpClient) : ArticleFeedPort {
                 "https://isc.sans.edu/rssfeed.xml"
             ),
             Theme.FINANCE to listOf(
-                "https://www.finextra.com/finextra-rss.aspx",
                 "https://techcrunch.com/category/fintech/feed/",
                 "https://www.theblock.co/rss.xml",
                 "https://www.coindesk.com/arc/outboundfeeds/rss/",

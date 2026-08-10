@@ -17,7 +17,7 @@ class RssFeedAdapterTest {
     // KOTLIN feed URLs, fixed in RssFeedAdapter.feedUrlsByTheme.
     private val jetbrainsUrl = "https://blog.jetbrains.com/kotlin/feed/"
     private val androidUrl   = "https://android-developers.googleblog.com/feeds/posts/default"
-    private val infoqUrl     = "https://www.infoq.com/kotlin/rss/"
+    private val infoqUrl     = "https://feed.infoq.com/kotlin/"
 
     // Any URL not stubbed with real feed content behaves like a broken feed:
     // both parsing attempts fail, so RssFeedAdapter must skip it silently.
